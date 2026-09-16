@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Бриф: система управления посуточной арендой</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f6f4; --surface:#ffffff; --border:#e3e2dd; --border-strong:#cfcec8;
+    --text:#1c1b19; --muted:#6f6d66; --accent:#b4552d; --accent-soft:#f3e7e0;
+    --shadow:0 1px 2px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#17171a; --surface:#202024; --border:#31313a; --border-strong:#44444f;
+      --text:#eceae6; --muted:#9a978f; --accent:#e0864f; --accent-soft:#31241c; --shadow:none;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#17171a; --surface:#202024; --border:#31313a; --border-strong:#44444f;
+    --text:#eceae6; --muted:#9a978f; --accent:#e0864f; --accent-soft:#31241c; --shadow:none;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding:32px 18px 96px}
+  header{margin-bottom:28px}
+  .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:10px}
+  h1{font-size:28px;line-height:1.2;margin:0 0 10px;font-weight:700;letter-spacing:-.02em}
+  .lede{color:var(--muted);margin:0;font-size:15px}
+  .progress-rail{position:sticky;top:0;z-index:5;margin:22px -18px 0;padding:10px 18px;background:var(--bg);border-bottom:1px solid var(--border)}
+  .bar{height:4px;background:var(--border);border-radius:99px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s ease}
+  .bar-label{font-size:12px;color:var(--muted);margin-top:6px}
+  section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 18px;margin-top:18px;box-shadow:var(--shadow)}
+  .sec-head{display:flex;gap:12px;align-items:baseline;margin-bottom:4px}
+  .num{font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:3px 7px;line-height:1;flex:none}
+  h2{font-size:19px;margin:0;font-weight:650;letter-spacing:-.01em}
+  .sec-note{color:var(--muted);font-size:13.5px;margin:6px 0 0 0}
+  .q{margin-top:20px;padding-top:20px;border-top:1px dashed var(--border)}
+  .q:first-of-type{border-top:0;padding-top:8px}
+  .q > label.qt{display:block;font-weight:550;margin-bottom:10px}
+  .hint{display:block;font-weight:400;color:var(--muted);font-size:13px;margin-top:3px}
+  .opts{display:flex;flex-wrap:wrap;gap:8px}
+  .opt{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border-strong);border-radius:99px;padding:7px 13px;cursor:pointer;font-size:14.5px;background:transparent;transition:border-color .15s,background .15s}
+  .opt:hover{border-color:var(--accent)}
+  .opt input{accent-color:var(--accent);margin:0}
+  .opt.checked{border-color:var(--accent);background:var(--accent-soft)}
+  input[type=text], textarea{width:100%;font:inherit;font-size:15px;color:var(--text);background:transparent;border:1px solid var(--border-strong);border-radius:10px;padding:10px 12px}
+  input[type=text]:focus, textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+  textarea{min-height:76px;resize:vertical}
+  footer.actions{position:sticky;bottom:0;margin:26px -18px -96px;padding:14px 18px 22px;background:linear-gradient(to top, var(--bg) 70%, transparent)}
+  button.primary{width:100%;font:inherit;font-weight:600;font-size:16px;color:#fff;background:var(--accent);border:0;border-radius:12px;padding:15px;cursor:pointer}
+  button.primary:active{opacity:.9}
+  .ghost{width:100%;margin-top:8px;font:inherit;font-size:14px;color:var(--muted);background:transparent;border:1px solid var(--border-strong);border-radius:12px;padding:11px;cursor:pointer}
+  #out{margin-top:16px;display:none}
+  #out textarea{min-height:260px;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .done{font-size:13.5px;color:var(--muted);margin:0 0 8px}
+  .star{color:var(--accent);font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="kicker">Бриф · система для посуточки</div>
+  <h1>Что нужно для проекта</h1>
+  <p class="lede">Отвечай коротко, где не знаешь точно — пиши примерно или пропускай. Вопросы со <span class="star">★</span> самые важные, на них ответь обязательно. В конце жми кнопку внизу — получится готовый текст, просто перешли его мне.</p>
+</header>
+
+<div class="progress-rail">
+  <div class="bar"><i id="barfill"></i></div>
+  <div class="bar-label"><span id="barcount">0</span> из <span id="bartotal">0</span> вопросов</div>
+</div>
+
+<form id="f">
+
+<section>
+  <div class="sec-head"><span class="num">01</span><h2>Объекты</h2></div>
+
+  <div class="q">
+    <label class="qt">Сколько квартир в работе?</label>
+    <div class="opts" data-q="Квартир" data-type="radio">
+      <label class="opt"><input type="radio" name="a1"><span>до 5</span></label>
+      <label class="opt"><input type="radio" name="a1"><span>5–10</span></label>
+      <label class="opt"><input type="radio" name="a1"><span>10–20</span></label>
+      <label class="opt"><input type="radio" name="a1"><span>больше 20</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Свои или в управлении?<span class="hint">Если чужие — понадобится отчётность перед собственниками.</span></label>
+    <div class="opts" data-q="Чьи квартиры" data-type="radio">
+      <label class="opt"><input type="radio" name="a2"><span>все свои</span></label>
+      <label class="opt"><input type="radio" name="a2"><span>часть в управлении</span></label>
+      <label class="opt"><input type="radio" name="a2"><span>в основном чужие</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">В каких районах Астаны?<span class="hint">Нужно для маршрутов клинеров.</span></label>
+    <input type="text" data-q="Районы" placeholder="">
+  </div>
+
+  <div class="q">
+    <label class="qt">Сколько в среднем заездов и выездов в день?</label>
+    <div class="opts" data-q="Заездов/выездов в день" data-type="radio">
+      <label class="opt"><input type="radio" name="a4"><span>1–3</span></label>
+      <label class="opt"><input type="radio" name="a4"><span>4–6</span></label>
+      <label class="opt"><input type="radio" name="a4"><span>7–10</span></label>
+      <label class="opt"><input type="radio" name="a4"><span>больше 10</span></label>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">02</span><h2>Менеджер</h2></div>
+  <p class="sec-note">Главное узкое место — разбираем подробно.</p>
+
+  <div class="q">
+    <label class="qt">Сколько человек в роли менеджера?</label>
+    <input type="text" data-q="Менеджеров" placeholder="например: один, Наташа">
+  </div>
+
+  <div class="q">
+    <label class="qt">★ Что съедает больше времени?<span class="hint">Отметь всё, но первым напиши самое тяжёлое.</span></label>
+    <div class="opts" data-q="Что съедает время менеджера" data-type="check">
+      <label class="opt"><input type="checkbox"><span>переписка с гостями</span></label>
+      <label class="opt"><input type="checkbox"><span>координация уборок</span></label>
+      <label class="opt"><input type="checkbox"><span>согласование заездов/выездов</span></label>
+      <label class="opt"><input type="checkbox"><span>передача ключей</span></label>
+      <label class="opt"><input type="checkbox"><span>приём новых заявок</span></label>
+      <label class="opt"><input type="checkbox"><span>счета и оплаты</span></label>
+      <label class="opt"><input type="checkbox"><span>разбор проблем и жалоб</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">★ Опиши обычный день менеджера<span class="hint">С утра до вечера, по шагам: что делает и в какой момент.</span></label>
+    <textarea data-q="День менеджера" placeholder="например: с утра смотрит кто выезжает, пишет клинерам, потом весь день отвечает гостям..."></textarea>
+  </div>
+
+  <div class="q">
+    <label class="qt">Сколько часов в день уходит на всю эту рутину?</label>
+    <div class="opts" data-q="Часов в день на рутину" data-type="radio">
+      <label class="opt"><input type="radio" name="a8"><span>1–3</span></label>
+      <label class="opt"><input type="radio" name="a8"><span>4–6</span></label>
+      <label class="opt"><input type="radio" name="a8"><span>весь день</span></label>
+      <label class="opt"><input type="radio" name="a8"><span>круглосуточно, с телефоном</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Где менеджер держит всю информацию?</label>
+    <div class="opts" data-q="Где хранится инфа" data-type="check">
+      <label class="opt"><input type="checkbox"><span>RealtyCalendar</span></label>
+      <label class="opt"><input type="checkbox"><span>WhatsApp-переписки</span></label>
+      <label class="opt"><input type="checkbox"><span>Google Sheets</span></label>
+      <label class="opt"><input type="checkbox"><span>блокнот</span></label>
+      <label class="opt"><input type="checkbox"><span>в голове</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Что ломается, когда менеджер болеет или в отпуске?</label>
+    <textarea data-q="Если менеджер выпадает" placeholder=""></textarea>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">03</span><h2>Заезды и выезды</h2></div>
+
+  <div class="q">
+    <label class="qt">Стандартное время заезда и выезда?</label>
+    <input type="text" data-q="Время заезда/выезда" placeholder="например: выезд 12:00, заезд 14:00">
+  </div>
+
+  <div class="q">
+    <label class="qt">Как часто просят ранний заезд или поздний выезд?</label>
+    <div class="opts" data-q="Ранний заезд/поздний выезд" data-type="radio">
+      <label class="opt"><input type="radio" name="a12"><span>постоянно</span></label>
+      <label class="opt"><input type="radio" name="a12"><span>иногда</span></label>
+      <label class="opt"><input type="radio" name="a12"><span>редко</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Кто решает, давать ли ранний заезд?<span class="hint">Это можно автоматизировать: система видит, убрана ли квартира.</span></label>
+    <div class="opts" data-q="Кто решает по раннему заезду" data-type="radio">
+      <label class="opt"><input type="radio" name="a13"><span>менеджер сам</span></label>
+      <label class="opt"><input type="radio" name="a13"><span>спрашивает у меня</span></label>
+      <label class="opt"><input type="radio" name="a13"><span>зависит от уборки</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Как гость попадает в квартиру?</label>
+    <div class="opts" data-q="Способ заезда" data-type="check">
+      <label class="opt"><input type="checkbox"><span>встречает человек</span></label>
+      <label class="opt"><input type="checkbox"><span>сейф-бокс с ключом</span></label>
+      <label class="opt"><input type="checkbox"><span>умный замок с кодом</span></label>
+      <label class="opt"><input type="checkbox"><span>консьерж</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Кто проверяет квартиру после выезда?</label>
+    <input type="text" data-q="Проверка после выезда" placeholder="например: клинер сообщает, если что-то сломано">
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">04</span><h2>Уборки</h2></div>
+  <p class="sec-note">Включая промежуточные при длительном проживании — про них отдельно.</p>
+
+  <div class="q">
+    <label class="qt">Сколько уборок в день в среднем?</label>
+    <div class="opts" data-q="Уборок в день" data-type="radio">
+      <label class="opt"><input type="radio" name="a16"><span>1–2</span></label>
+      <label class="opt"><input type="radio" name="a16"><span>3–5</span></label>
+      <label class="opt"><input type="radio" name="a16"><span>6–10</span></label>
+      <label class="opt"><input type="radio" name="a16"><span>больше 10</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">★ От скольких ночей начинается промежуточная уборка?</label>
+    <input type="text" data-q="Промежуточная уборка: от скольких ночей" placeholder="например: от 5 ночей">
+  </div>
+
+  <div class="q">
+    <label class="qt">★ С какой периодичностью она повторяется?<span class="hint">Правило одинаковое для всех квартир или разное?</span></label>
+    <input type="text" data-q="Периодичность промежуточной уборки" placeholder="например: каждые 4–5 дней, для всех одинаково">
+  </div>
+
+  <div class="q">
+    <label class="qt">Промежуточная уборка отличается от обычной?</label>
+    <div class="opts" data-q="Тип промежуточной уборки" data-type="radio">
+      <label class="opt"><input type="radio" name="a19"><span>такая же полная</span></label>
+      <label class="opt"><input type="radio" name="a19"><span>лёгкая, только бельё и ванная</span></label>
+      <label class="opt"><input type="radio" name="a19"><span>по ситуации</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Как договариваются о времени с гостем?</label>
+    <div class="opts" data-q="Согласование промежуточной уборки" data-type="radio">
+      <label class="opt"><input type="radio" name="a20"><span>менеджер пишет заранее</span></label>
+      <label class="opt"><input type="radio" name="a20"><span>клинер звонит сам</span></label>
+      <label class="opt"><input type="radio" name="a20"><span>приходят без предупреждения</span></label>
+      <label class="opt"><input type="radio" name="a20"><span>гость сам просит</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">★ Бывает, что про промежуточную забыли?</label>
+    <div class="opts" data-q="Забывают про промежуточную" data-type="radio">
+      <label class="opt"><input type="radio" name="a21"><span>да, регулярно</span></label>
+      <label class="opt"><input type="radio" name="a21"><span>иногда</span></label>
+      <label class="opt"><input type="radio" name="a21"><span>нет, держим в голове</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Сколько клинеров и как они оформлены?</label>
+    <input type="text" data-q="Клинеры" placeholder="например: 3 своих + клининг-компания на подмену">
+  </div>
+
+  <div class="q">
+    <label class="qt">Как им ставят задачи сейчас?</label>
+    <div class="opts" data-q="Постановка задач клинерам" data-type="radio">
+      <label class="opt"><input type="radio" name="a23"><span>WhatsApp вручную</span></label>
+      <label class="opt"><input type="radio" name="a23"><span>общий чат</span></label>
+      <label class="opt"><input type="radio" name="a23"><span>звонок</span></label>
+      <label class="opt"><input type="radio" name="a23"><span>таблица</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Клинеры пользуются Telegram?</label>
+    <div class="opts" data-q="Telegram у клинеров" data-type="radio">
+      <label class="opt"><input type="radio" name="a24"><span>да, все</span></label>
+      <label class="opt"><input type="radio" name="a24"><span>частично</span></label>
+      <label class="opt"><input type="radio" name="a24"><span>только WhatsApp</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Как считается оплата клинерам?</label>
+    <div class="opts" data-q="Оплата клинерам" data-type="radio">
+      <label class="opt"><input type="radio" name="a25"><span>за уборку</span></label>
+      <label class="opt"><input type="radio" name="a25"><span>фикс в месяц</span></label>
+      <label class="opt"><input type="radio" name="a25"><span>фикс + за уборку</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Как отслеживается бельё и расходники?</label>
+    <input type="text" data-q="Бельё и расходники" placeholder="">
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">05</span><h2>Сбои</h2></div>
+  <p class="sec-note">Что именно ломается — из этого вырастут автоматические проверки.</p>
+
+  <div class="q">
+    <label class="qt">★ Что чаще всего идёт не так?</label>
+    <div class="opts" data-q="Частые сбои" data-type="check">
+      <label class="opt"><input type="checkbox"><span>не успели убрать к заезду</span></label>
+      <label class="opt"><input type="checkbox"><span>забыли про уборку</span></label>
+      <label class="opt"><input type="checkbox"><span>гость не получил инструкцию</span></label>
+      <label class="opt"><input type="checkbox"><span>клинер не вышел</span></label>
+      <label class="opt"><input type="checkbox"><span>закончилось бельё</span></label>
+      <label class="opt"><input type="checkbox"><span>двойная бронь</span></label>
+      <label class="opt"><input type="checkbox"><span>гость не выехал вовремя</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Расскажи последний случай, когда всё пошло не так</label>
+    <textarea data-q="Последний факап" placeholder=""></textarea>
+  </div>
+
+  <div class="q">
+    <label class="qt">Как обычно узнаёте о проблеме?</label>
+    <div class="opts" data-q="Как узнаём о проблеме" data-type="radio">
+      <label class="opt"><input type="radio" name="a29"><span>заранее, сами замечаем</span></label>
+      <label class="opt"><input type="radio" name="a29"><span>когда гость уже жалуется</span></label>
+      <label class="opt"><input type="radio" name="a29"><span>из отзыва постфактум</span></label>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">06</span><h2>Гости и заявки</h2></div>
+
+  <div class="q">
+    <label class="qt">Откуда приходят новые заявки?</label>
+    <div class="opts" data-q="Каналы заявок" data-type="check">
+      <label class="opt"><input type="checkbox"><span>Airbnb</span></label>
+      <label class="opt"><input type="checkbox"><span>Booking</span></label>
+      <label class="opt"><input type="checkbox"><span>Krisha</span></label>
+      <label class="opt"><input type="checkbox"><span>OLX</span></label>
+      <label class="opt"><input type="checkbox"><span>Instagram</span></label>
+      <label class="opt"><input type="checkbox"><span>WhatsApp напрямую</span></label>
+      <label class="opt"><input type="checkbox"><span>по рекомендации</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Какие вопросы гости задают чаще всего?<span class="hint">Это станет базой знаний для агента.</span></label>
+    <textarea data-q="Частые вопросы гостей" placeholder="например: как заехать, парковка, ранний заезд, документы для командировки"></textarea>
+  </div>
+
+  <div class="q">
+    <label class="qt">На каких языках общаетесь?</label>
+    <div class="opts" data-q="Языки" data-type="check">
+      <label class="opt"><input type="checkbox"><span>русский</span></label>
+      <label class="opt"><input type="checkbox"><span>казахский</span></label>
+      <label class="opt"><input type="checkbox"><span>английский</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Ночью сообщения приходят?</label>
+    <div class="opts" data-q="Ночные сообщения" data-type="radio">
+      <label class="opt"><input type="radio" name="a33"><span>да, будят</span></label>
+      <label class="opt"><input type="radio" name="a33"><span>редко</span></label>
+      <label class="opt"><input type="radio" name="a33"><span>почти нет</span></label>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">07</span><h2>Деньги</h2></div>
+  <p class="sec-note">Коротко — счета оставляем менеджеру, но отчётность может пригодиться.</p>
+
+  <div class="q">
+    <label class="qt">Где ведётся учёт?</label>
+    <div class="opts" data-q="Учёт" data-type="radio">
+      <label class="opt"><input type="radio" name="a34"><span>Google Sheets / Excel</span></label>
+      <label class="opt"><input type="radio" name="a34"><span>блокнот</span></label>
+      <label class="opt"><input type="radio" name="a34"><span>в голове</span></label>
+      <label class="opt"><input type="radio" name="a34"><span>бухгалтер</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Знаешь доход по каждой квартире отдельно?</label>
+    <div class="opts" data-q="Доход по квартирам" data-type="radio">
+      <label class="opt"><input type="radio" name="a35"><span>да, точно</span></label>
+      <label class="opt"><input type="radio" name="a35"><span>примерно</span></label>
+      <label class="opt"><input type="radio" name="a35"><span>нет</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Что хотел бы видеть в еженедельном отчёте?</label>
+    <textarea data-q="Хочу в отчёте" placeholder=""></textarea>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">08</span><h2>Что доверим системе</h2></div>
+
+  <div class="q">
+    <label class="qt">★ Что готов отдать полностью?</label>
+    <div class="opts" data-q="Отдам системе" data-type="check">
+      <label class="opt"><input type="checkbox"><span>график уборок</span></label>
+      <label class="opt"><input type="checkbox"><span>промежуточные уборки</span></label>
+      <label class="opt"><input type="checkbox"><span>задачи клинерам</span></label>
+      <label class="opt"><input type="checkbox"><span>напоминания менеджеру</span></label>
+      <label class="opt"><input type="checkbox"><span>инструкции гостям</span></label>
+      <label class="opt"><input type="checkbox"><span>ответы на типовые вопросы</span></label>
+      <label class="opt"><input type="checkbox"><span>отчёты и подсчёты</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Что ни в коем случае не отдашь?</label>
+    <textarea data-q="Не отдам" placeholder=""></textarea>
+  </div>
+
+  <div class="q">
+    <label class="qt">★ Если бы одну задачу можно было убрать из дня навсегда — какую?</label>
+    <textarea data-q="Убрать навсегда" placeholder=""></textarea>
+  </div>
+
+  <div class="q">
+    <label class="qt">Кто будет пользоваться?</label>
+    <div class="opts" data-q="Пользователи" data-type="check">
+      <label class="opt"><input type="checkbox"><span>я</span></label>
+      <label class="opt"><input type="checkbox"><span>менеджер</span></label>
+      <label class="opt"><input type="checkbox"><span>клинеры</span></label>
+      <label class="opt"><input type="checkbox"><span>собственники квартир</span></label>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">09</span><h2>Техническое</h2></div>
+
+  <div class="q">
+    <label class="qt">Тариф RealtyCalendar?<span class="hint">Посмотри в личном кабинете, раздел с подпиской.</span></label>
+    <input type="text" data-q="Тариф RealtyCalendar" placeholder="">
+  </div>
+
+  <div class="q">
+    <label class="qt">Есть ли в кабинете раздел API или интеграции?</label>
+    <div class="opts" data-q="API в кабинете" data-type="radio">
+      <label class="opt"><input type="radio" name="a41"><span>есть</span></label>
+      <label class="opt"><input type="radio" name="a41"><span>нет</span></label>
+      <label class="opt"><input type="radio" name="a41"><span>не смотрел</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Что ещё используете?</label>
+    <div class="opts" data-q="Другие сервисы" data-type="check">
+      <label class="opt"><input type="checkbox"><span>Bitrix24</span></label>
+      <label class="opt"><input type="checkbox"><span>Google Sheets</span></label>
+      <label class="opt"><input type="checkbox"><span>умные замки</span></label>
+      <label class="opt"><input type="checkbox"><span>онлайн-касса</span></label>
+      <label class="opt"><input type="checkbox"><span>ничего</span></label>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-head"><span class="num">10</span><h2>Продукт</h2></div>
+  <p class="sec-note">Ты говорил, что такое могут купить другие суточники. Если это серьёзно — архитектуру нужно закладывать иначе с самого начала.</p>
+
+  <div class="q">
+    <label class="qt">★ Делаем только для тебя или как продукт на продажу?</label>
+    <div class="opts" data-q="Для себя или продукт" data-type="radio">
+      <label class="opt"><input type="radio" name="a43"><span>только для себя</span></label>
+      <label class="opt"><input type="radio" name="a43"><span>сначала себе, потом продавать</span></label>
+      <label class="opt"><input type="radio" name="a43"><span>сразу как продукт</span></label>
+      <label class="opt"><input type="radio" name="a43"><span>не решил</span></label>
+    </div>
+  </div>
+
+  <div class="q">
+    <label class="qt">Знаешь других суточников, кому это нужно?<span class="hint">Сколько человек и сколько у них квартир.</span></label>
+    <textarea data-q="Потенциальные клиенты" placeholder=""></textarea>
+  </div>
+
+  <div class="q">
+    <label class="qt">Сколько такие люди готовы платить в месяц, по твоим ощущениям?</label>
+    <input type="text" data-q="Готовность платить" placeholder="">
+  </div>
+
+  <div class="q">
+    <label class="qt">Что ещё важно знать?</label>
+    <textarea data-q="Дополнительно" placeholder=""></textarea>
+  </div>
+</section>
+
+</form>
+
+<footer class="actions">
+  <button class="primary" id="build" type="button">Собрать ответы</button>
+  <button class="ghost" id="copy" type="button" style="display:none">Скопировать текст</button>
+</footer>
+
+<div id="out">
+  <p class="done">Готово. Скопируй текст ниже и отправь его мне.</p>
+  <textarea id="result" readonly></textarea>
+</div>
+
+</div>
+
+<script>
+(function(){
+  var form = document.getElementById('f');
+
+  form.addEventListener('change', function(e){
+    var input = e.target;
+    if(input.type === 'radio'){
+      var group = form.querySelectorAll('input[name="'+input.name+'"]');
+      for(var i=0;i<group.length;i++){ group[i].closest('.opt').classList.remove('checked'); }
+    }
+    if(input.type === 'radio' || input.type === 'checkbox'){
+      input.closest('.opt').classList.toggle('checked', input.checked);
+    }
+    updateProgress();
+  });
+  form.addEventListener('input', updateProgress);
+
+  function questions(){ return form.querySelectorAll('.q'); }
+
+  function answerOf(q){
+    var box = q.querySelector('.opts');
+    if(box){
+      var picked = [], ins = box.querySelectorAll('input');
+      for(var i=0;i<ins.length;i++){
+        if(ins[i].checked) picked.push(ins[i].parentNode.querySelector('span').textContent);
+      }
+      return { label: box.getAttribute('data-q'), value: picked.join(', ') };
+    }
+    var field = q.querySelector('input[type=text], textarea');
+    if(field) return { label: field.getAttribute('data-q'), value: field.value.trim() };
+    return null;
+  }
+
+  function updateProgress(){
+    var qs = questions(), done = 0;
+    for(var i=0;i<qs.length;i++){
+      var a = answerOf(qs[i]);
+      if(a && a.value) done++;
+    }
+    document.getElementById('barcount').textContent = done;
+    document.getElementById('bartotal').textContent = qs.length;
+    document.getElementById('barfill').style.width = (qs.length ? (done/qs.length*100) : 0) + '%';
+  }
+
+  document.getElementById('build').addEventListener('click', function(){
+    var lines = ['БРИФ: СИСТЕМА ДЛЯ ПОСУТОЧНОЙ АРЕНДЫ', ''];
+    var secs = form.querySelectorAll('section');
+    for(var s=0;s<secs.length;s++){
+      var title = secs[s].querySelector('h2').textContent;
+      var qs = secs[s].querySelectorAll('.q'), block = [];
+      for(var i=0;i<qs.length;i++){
+        var a = answerOf(qs[i]);
+        if(a && a.value) block.push('• ' + a.label + ': ' + a.value);
+      }
+      if(block.length){
+        lines.push('— ' + title.toUpperCase() + ' —');
+        lines = lines.concat(block);
+        lines.push('');
+      }
+    }
+    if(lines.length <= 2) lines.push('(пока ничего не заполнено)');
+    var out = document.getElementById('out');
+    document.getElementById('result').value = lines.join('\n');
+    out.style.display = 'block';
+    document.getElementById('copy').style.display = 'block';
+    out.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+
+  document.getElementById('copy').addEventListener('click', function(){
+    var ta = document.getElementById('result'), btn = this;
+    ta.removeAttribute('readonly');
+    ta.select(); ta.setSelectionRange(0, 999999);
+    try { document.execCommand('copy'); btn.textContent = 'Скопировано'; }
+    catch(err){ btn.textContent = 'Выдели текст и скопируй вручную'; }
+    ta.setAttribute('readonly','readonly');
+    setTimeout(function(){ btn.textContent = 'Скопировать текст'; }, 2500);
+  });
+
+  updateProgress();
+})();
+</script>
+</body>
+</html>
